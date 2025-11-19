@@ -1,0 +1,21 @@
+#Banco de dados Mysql
+
+PASSWORD_DB: coloque aqui a senha do seu banco de dados 
+USERNAME_DB: coloque aqui o usuario do seu banco de dados
+DB_NAME: coloque o nome do banco de dados 
+PATH_UNIX_SOKECT: o caminho do unix sokect do mysql 
+MACHINE_DB: ip da maquina que está hosteando o banco de dados
+
+
+#Tokens de validação do wordpress
+   #Tokens gerados a partir do proprio site do wordpress 
+     # https://api.wordpress.org/secret-key/1.1/salt/
+     
+AUTH_KEY: 
+SECURE_AUTH_KEY: 
+LOGGED_IN_KEY: 
+NONCE_KEY: 
+AUTH_SALT: 
+SECURE_AUTH_SALT: 
+LOGGED_IN_SALT: 
+NONCE_SALT: 
