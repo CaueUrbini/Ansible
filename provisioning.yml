@@ -1,0 +1,107 @@
+---
+- hosts: wordpress
+  var_files:
+    - env.yml
+  handlers:
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
+  become: yes
+  tasks:
+    - name: Instalando apache e php 
+      ansible.builtin.apt:
+        pkg:
+          - apache2
+          - ghostscript
+          - libapache2-mod-php
+          - php
+          - php-bcmath
+          - php-curl
+          - php-imagick
+          - php-intl
+          - php-json
+          - php-mbstring
+          - php-mysql
+          - php-xml
+          - php-zip
+        state: latest
+        update_cache: yes
+      become: yes
+    - name: Criando diretório
+      ansible.builtin.file:
+        path: /srv/www
+        state: directory
+        owner: www-data
+        group: www-data
+      become: yes
+    - name: Arquivos que precisam ser baixados
+      ansible.builtin.unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /srv/www/
+        remote_src: yes
+      become: yes
+    - name: Copiando o arquivo e dando as permissões necessárias
+      ansible.builtin.copy:
+        src: files/wordpress.conf
+        dest: /etc/apache2/sites-available/000-default.conf
+      become: yes
+      notify: 
+        - restart apache
+    - name: Copiando o arquivo e dando as permissões necessárias
+      ansible.builtin.copy:
+        src: /srv/www/wordpress/wp-config-sample.php
+        dest: /srv/www/wordpress/wp-config.conf
+        remote_src: yes
+      become: yes
+    - name: Mudando o hostname 
+      ansible.builtin.replace:
+        path: /srv/www/wordpress/wp-config.conf
+        regexp: '{{ item.regexp }}'
+        replace: '{{item.replace}}'
+      with_items:
+      - { regexp: 'database_name_here', replace: '{{DB_NAME}}'}
+      - { regexp: 'username_here', replace: '{{USERNAME_DB}}'}
+      - { regexp: 'password_here', replace: '{{PASSWORD_DB}}'}
+      - { regexp: 'localhost', replace: '{{MACHINE_DB}}'}
+      become: yes
+    - name: Replace a localhost entry searching for a literal string to avoid escaping
+      ansible.builtin.lineinfile:
+        path: /srv/www/wordpress/wp-config.conf
+        search_string: "{{ item.search_string }}"
+        line: "{{ item.line }}"
+      with_items:
+      - {search_string: "define( 'AUTH_KEY',         'put your unique phrase here' );", line: "define({{AUTH_KEY}}"}
+      - {search_string: "define( 'SECURE_AUTH_KEY',  'put your unique phrase here' );", line: "define({{SECURE_AUTH_KEY}}"}
+      - {search_string: "define( 'LOGGED_IN_KEY',    'put your unique phrase here' );", line: "define({{LOGGED_IN_KEY}}"}
+      - {search_string: "define( 'NONCE_KEY',        'put your unique phrase here' );", line: "define({{NONCE_KEY}}"}
+      - {search_string: "define( 'AUTH_SALT',        'put your unique phrase here' );", line: "define({{AUTH_SALT}}"}
+      - {search_string: "define( 'SECURE_AUTH_SALT', 'put your unique phrase here' );", line: "define({{SECURE_AUTH_SALT}}"}
+      - {search_string: "define( 'LOGGED_IN_SALT',   'put your unique phrase here' );", line: "define({{LOGGED_IN_SALT}}"}
+      - {search_string: "define( 'NONCE_SALT',       'put your unique phrase here' );", line: "define({{NONCE_SALT}}"}
+      become: yes
+
+- hosts: mysql
+  tasks: 
+    - name: Instalando dependencias para executar o banco de dados 
+      ansible.builtin.apt:
+        pkg:
+          - mysql-server
+          - python3-pymysql
+        state: latest
+        update_cache: yes
+      become: yes
+    - name: Criando a base de dados 
+      community.mysql.mysql_db:
+        name: {{DB_NAME}}
+        state: present 
+        login_unix_socket: /run/mysqld/mysqld.sock 
+      become: yes
+    - name: Criando usuário wordpress_user com permissões na base de dados 
+      community.mysql.mysql_user:
+        name: {{USERNAME_DB}}
+        password: {{PASSWORD_DB}}
+        priv: 'wordpress_db.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER'
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+      become: yes
