@@ -19,3 +19,9 @@ AUTH_SALT:
 SECURE_AUTH_SALT: 
 LOGGED_IN_SALT: 
 NONCE_SALT: 
+
+# Variaveis Zabbix
+download_zabbix_url: 
+key_zabbix: 
+repositorio_zabbix: 
+server_monitoramento: 
